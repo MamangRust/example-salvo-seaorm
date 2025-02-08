@@ -1,0 +1,34 @@
+[package]
+name = "example-salvo-seaorm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.38"
+dotenvy = "0.15.7"
+tokio = { version = "1.43.0", features = ["full"] }
+sea-orm = { version = "1.1.0", features = [
+  "runtime-tokio-native-tls",
+  "sqlx-postgres",
+] }
+sea-orm-migration = "1.1.0"
+salvo = { version = "0.76.1", features = ["anyhow","jwt-auth", "oapi", "affix-state", "size-limiter"] }
+serde = { version = "1.0.214", features = ["derive"] }
+async-trait = "0.1.83"
+thiserror = "2.0.11"
+bcrypt = "0.17.0"
+jsonwebtoken = "9.3.0"
+serde_json = "1.0.132"
+uuid = { version = "1.11.0", features = ["serde", "v4"] }
+futures-util = "0.3.31"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+dotenv = "0.15.0"
+utoipa = "5.3.1"
+utoipa-swagger-ui = "9.0.0"
+
+[dev-dependencies]
+sea-orm-migration  = { version = "1.1.0", features = [
+  "runtime-tokio-native-tls",
+  "sqlx-postgres",
+] }
