@@ -49,11 +49,11 @@ pub use self::user::user_routes;
     ),
     modifiers(&SecurityAddon),
     tags(
-        (name = "auth", description = "Authentication endpoints."),
-        (name = "category", description = "Category management endpoints."),
-        (name = "posts", description = "Post management endpoints."),
-        (name = "comments", description = "Comments management endpoints."),
-        (name = "users", description = "User management endpoints.")
+        (name = "Auth", description = "Authentication endpoints."),
+        (name = "Categories", description = "Categories management endpoints."),
+        (name = "Posts", description = "Posts management endpoints."),
+        (name = "Comments", description = "Comments management endpoints."),
+        (name = "Users", description = "Users management endpoints.")
     )
 )]
 struct ApiDoc;

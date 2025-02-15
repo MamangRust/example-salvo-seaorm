@@ -1,6 +1,5 @@
 use salvo::prelude::*;
 use serde_json::json;
-use std::sync::Arc;
 use crate::{
     domain::{ApiResponse, CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest}, middleware::jwt_auth, state::AppState
 };
@@ -9,22 +8,22 @@ use crate::{
 #[utoipa::path(
     get,
     path = "/api/categories",
-    responses(
-        (status = 200, description = "List all category successfully", body = ApiResponse<Vec<CategoryResponse>>)
-    ),
+    tag = "Categories",
     security(
         ("bearer_auth" = [])
     ),
-    tag = "category"
+    responses(
+        (status = 200, description = "Successfully retrieved list of categories", body = ApiResponse<Vec<CategoryResponse>>),
+        (status = 500, description = "Internal server error", body = String),
+    )
 )]
 #[handler]
 pub async fn get_categories(depot: &mut Depot, res: &mut Response) {
-    let state = depot.obtain::<Arc<AppState>>().unwrap();
+    let state = depot.obtain::<AppState>().unwrap();
     match state.di_container.category_service.get_categories().await {
         Ok(categories) => res.render(Json(categories)),
         Err(e) => {
-            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-            res.render(Json(json!(e)));
+            res.status_code(StatusCode::INTERNAL_SERVER_ERROR).render(Json(json!(e)));
         }
     }
 }
@@ -32,28 +31,30 @@ pub async fn get_categories(depot: &mut Depot, res: &mut Response) {
 #[utoipa::path(
     get,
     path = "/api/categories/{id}",
-    responses(
-        (status = 200, description = "List all category successfully", body = ApiResponse<CategoryResponse>)
-    ),
+    tag = "Categories",
     security(
         ("bearer_auth" = [])
     ),
-    tag = "category"
+    params(
+        ("id" = i32, Path, description = "Category ID")
+    ),
+    responses(
+        (status = 200, description = "Successfully retrieved category details", body = ApiResponse<CategoryResponse>),
+        (status = 500, description = "Internal server error", body = String),
+    )
 )]
 #[handler]
 pub async fn get_category(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    let state = depot.obtain::<Arc<AppState>>().unwrap();
+    let state = depot.obtain::<AppState>().unwrap();
     let id: i32 = req.param("id").unwrap_or_default();
     
     match state.di_container.category_service.get_category(id).await {
         Ok(Some(category)) => res.render(Json(category)),
         Ok(None) => {
-            res.status_code(StatusCode::NOT_FOUND);
-            res.render(Json(json!({"status": "fail", "message": "Category not found"})));
+            res.status_code(StatusCode::NOT_FOUND).render(Json(json!({"status": "fail", "message": "Category not found"})));
         }
         Err(e) => {
-            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-            res.render(Json(json!(e)));
+            res.status_code(StatusCode::INTERNAL_SERVER_ERROR).render(Json(json!(e)));
         }
     }
 }
@@ -61,34 +62,33 @@ pub async fn get_category(req: &mut Request, depot: &mut Depot, res: &mut Respon
 #[utoipa::path(
     post,
     path = "/api/categories",
-    responses(
-        (status = 200, description = "Create category", body = ApiResponse<CategoryResponse>)
-    ),
+    tag = "Categories",
     security(
         ("bearer_auth" = [])
     ),
-    tag = "category"
+    request_body = CreateCategoryRequest,
+    responses(
+        (status = 200, description = "Category created successfully", body = ApiResponse<CategoryResponse>),
+        (status = 500, description = "Internal server error", body = String),
+    )
 )]
 #[handler]
 pub async fn create_category(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    let state = depot.obtain::<Arc<AppState>>().unwrap();
+    let state = depot.obtain::<AppState>().unwrap();
     let body = match req.parse_body::<CreateCategoryRequest>().await {
         Ok(body) => body,
         Err(_) => {
-            res.status_code(StatusCode::BAD_REQUEST);
-            res.render(Json(json!({"status": "fail", "message": "Invalid request body"})));
+            res.status_code(StatusCode::BAD_REQUEST).render(Json(json!({"status": "fail", "message": "Invalid request body"})));
             return;
         }
     };
 
     match state.di_container.category_service.create_category(&body).await {
         Ok(category) => {
-            res.status_code(StatusCode::CREATED);
-            res.render(Json(category));
+            res.status_code(StatusCode::CREATED).render(Json(category));
         }
         Err(e) => {
-            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-            res.render(Json(json!(e)));
+            res.status_code(StatusCode::INTERNAL_SERVER_ERROR).render(Json(json!(e)));
         }
     }
 }
@@ -96,24 +96,28 @@ pub async fn create_category(req: &mut Request, depot: &mut Depot, res: &mut Res
 #[utoipa::path(
     put,
     path = "/api/categories/{id}",
-    responses(
-        (status = 200, description = "Delete category", body = ApiResponse<CategoryResponse>)
-    ),
+    tag = "Categories",
     security(
         ("bearer_auth" = [])
     ),
-    tag = "category"
+    params(
+        ("id" = i32, Path, description = "Category ID")
+    ),
+    request_body = UpdateCategoryRequest,
+    responses(
+        (status = 200, description = "Category updated successfully", body = ApiResponse<CategoryResponse>),
+        (status = 500, description = "Internal server error", body = String),
+    )
 )]
 #[handler]
 pub async fn update_category(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    let state = depot.obtain::<Arc<AppState>>().unwrap();
+    let state = depot.obtain::<AppState>().unwrap();
     let id: i32 = req.param("id").unwrap_or_default();
 
     let mut body = match req.parse_body::<UpdateCategoryRequest>().await {
         Ok(body) => body,
         Err(_) => {
-            res.status_code(StatusCode::BAD_REQUEST);
-            res.render(Json(json!({"status": "fail", "message": "Invalid request body"})));
+            res.status_code(StatusCode::BAD_REQUEST).render(Json(json!({"status": "fail", "message": "Invalid request body"})));
             return;
         }
     };
@@ -123,12 +127,10 @@ pub async fn update_category(req: &mut Request, depot: &mut Depot, res: &mut Res
     match state.di_container.category_service.update_category(&body).await {
         Ok(Some(category)) => res.render(Json(category)),
         Ok(None) => {
-            res.status_code(StatusCode::NOT_FOUND);
-            res.render(Json(json!({"status": "fail", "message": "Category not found"})));
+            res.status_code(StatusCode::NOT_FOUND).render(Json(json!({"status": "fail", "message": "Category not found"})));
         }
         Err(e) => {
-            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-            res.render(Json(json!(e)));
+            res.status_code(StatusCode::INTERNAL_SERVER_ERROR).render(Json(json!(e)));
         }
     }
 }
@@ -136,27 +138,29 @@ pub async fn update_category(req: &mut Request, depot: &mut Depot, res: &mut Res
 #[utoipa::path(
     delete,
     path = "/api/categories/{id}",
-    responses(
-        (status = 200, description = "Delete category", body = Value)
-    ),
+    tag = "Categories",
     security(
         ("bearer_auth" = [])
     ),
-    tag = "category"
+    params(
+        ("id" = i32, Path, description = "Category ID")
+    ),
+    responses(
+        (status = 200, description = "Category deleted successfully", body = Value),
+        (status = 500, description = "Internal server error", body = String),
+    )
 )]
 #[handler]
 pub async fn delete_category(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    let state = depot.obtain::<Arc<AppState>>().unwrap();
+    let state = depot.obtain::<AppState>().unwrap();
     let id: i32 = req.param("id").unwrap_or_default();
 
     match state.di_container.category_service.delete_category(id).await {
         Ok(_) => {
-            res.status_code(StatusCode::OK);
-            res.render(Json(json!({"status": "success", "message": "Category deleted successfully"})));
+            res.status_code(StatusCode::OK).render(Json(json!({"status": "success", "message": "Category deleted successfully"})));
         }
         Err(e) => {
-            res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-            res.render(Json(json!({"status": "error", "message": e.to_string()})));
+            res.status_code(StatusCode::INTERNAL_SERVER_ERROR).render(Json(json!({"status": "error", "message": e.to_string()})));
         }
     }
 }

@@ -9,13 +9,13 @@ use serde_json::json;
 
 #[utoipa::path(
     post,
-    path = "/api/register",
+    path = "/api/auth/register",
     request_body = RegisterRequest,
     responses(
         (status = 200, description = "Login successful", body = ApiResponse<UserResponse>),
         (status = 401, description = "Unauthorized")
     ),
-    tag = "auth"
+    tag = "Auth"
 )]
 #[handler]
 pub async fn register_user_handler(req: JsonBody<RegisterRequest>, depot: &mut Depot, res: &mut Response) {
@@ -25,16 +25,14 @@ pub async fn register_user_handler(req: JsonBody<RegisterRequest>, depot: &mut D
 
     match state.di_container.auth_service.register_user(&body).await {
         Ok(response) => {
-            res.status_code(StatusCode::OK);
-            res.render(Json(json!({
+            res.status_code(StatusCode::OK).render(Json(json!({
                 "status": "success",
                 "message": "User registered successfully",
                 "data": response
             })));
         }
         Err(e) => {
-            res.status_code(StatusCode::UNAUTHORIZED);
-            res.render(Json(json!({
+            res.status_code(StatusCode::UNAUTHORIZED).render(Json(json!({
                 "status": "fail",
                 "message": "Registration failed",
                 "error": e.to_string()
@@ -45,13 +43,13 @@ pub async fn register_user_handler(req: JsonBody<RegisterRequest>, depot: &mut D
 
 #[utoipa::path(
     post,
-    path = "/api/login",
+    path = "/api/auth/login",
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Login successful", body = ApiResponse<String>),
         (status = 401, description = "Unauthorized")
     ),
-    tag = "auth"
+    tag = "Auth"
 )]
 #[handler]
 pub async fn login_user_handler(req: JsonBody<LoginRequest>, depot: &mut Depot, res: &mut Response) {
@@ -78,7 +76,7 @@ pub async fn login_user_handler(req: JsonBody<LoginRequest>, depot: &mut Depot, 
     security(
         ("bearer_auth" = [])
     ),
-    tag = "auth",
+    tag = "Auth",
 )]
 #[handler]
 pub async fn get_user_handler(_req: &mut Request, depot: &mut Depot, res: &mut Response) {
